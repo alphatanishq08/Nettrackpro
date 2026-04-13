@@ -1,5 +1,5 @@
 """
-CyberNet Monitor - A cyberpunk-themed Windows network monitoring application.
+NetTrackrPro - A cyberpunk-themed Windows network monitoring application.
 Requirements: pip install customtkinter psutil pystray pillow
 """
 
@@ -109,7 +109,7 @@ class StartupDialog(ctk.CTkToplevel):
 
     def __init__(self, parent):
         super().__init__(parent)
-        self.title("CyberNet Monitor — Session Init")
+        self.title("NetTrackrPro — Session Init")
         self.geometry("460x220")
         self.configure(fg_color=BG)
         self.resizable(False, False)
@@ -117,7 +117,7 @@ class StartupDialog(ctk.CTkToplevel):
         self.result = None
 
         ctk.CTkLabel(
-            self, text="CYBERNETMONITOR", font=("Courier New", 18, "bold"),
+            self, text="NETTRACKRPRO", font=("Courier New", 18, "bold"),
             text_color=CYAN
         ).pack(pady=(22, 4))
 
@@ -202,7 +202,7 @@ class SpeedGraph(Canvas):
             self.create_line(pad, y, w - pad, y, fill="#0d2222", dash=(3, 4))
 
         max_val = max(max(self.dl_history, default=1),
-                      max(self.ul_history, default=1), 1)
+                       max(self.ul_history, default=1), 1)
 
         def points(series):
             pts = []
@@ -232,7 +232,7 @@ class SpeedGraph(Canvas):
 #  MAIN APPLICATION CLASS
 # ─────────────────────────────────────────────
 
-class CyberNetMonitor(ctk.CTk):
+class NetTrackrPro(ctk.CTk):
 
     def __init__(self, csv_logging: bool):
         super().__init__()
@@ -245,7 +245,7 @@ class CyberNetMonitor(ctk.CTk):
         self._minimized_tray  = False
         self._poll_interval   = POLL_INTERVAL_ACTIVE
         self._last_net        = psutil.net_io_counters()
-        self._session_dl      = 0.0   # bytes
+        self._session_dl      = 0.0  # bytes
         self._session_ul      = 0.0
         self._limit_bytes     = None  # None = unlimited
         self._limit_reached   = False
@@ -257,7 +257,7 @@ class CyberNetMonitor(ctk.CTk):
 
         # ── Window Setup ───────────────────────
         ctk.set_appearance_mode("dark")
-        self.title("CyberNet Monitor")
+        self.title("NetTrackrPro")
         self.geometry("820x680")
         self.minsize(720, 580)
         self.configure(fg_color=BG)
@@ -272,14 +272,38 @@ class CyberNetMonitor(ctk.CTk):
     def _init_csv(self):
         if not self.csv_logging:
             return
-        ts  = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        fn  = f"cybernet_session_{ts}.csv"
-        self.csv_file   = open(fn, "w", newline="", encoding="utf-8")
-        self.csv_writer = csv.writer(self.csv_file)
-        self.csv_writer.writerow(
-            ["timestamp", "dl_speed_bps", "ul_speed_bps",
-             "session_dl_mb", "session_ul_mb"]
-        )
+            
+        ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"nettrackrpro_session_{ts}.csv"
+        
+        # List of potential paths to try (Current Dir, then Documents)
+        possible_paths = [
+            os.path.join(os.getcwd(), filename),
+            os.path.join(os.path.expanduser("~"), "Documents", filename)
+        ]
+
+        success = False
+        for path in possible_paths:
+            try:
+                self.csv_file = open(path, "w", newline="", encoding="utf-8")
+                self.csv_writer = csv.writer(self.csv_file)
+                self.csv_writer.writerow(
+                    ["timestamp", "dl_speed_bps", "ul_speed_bps",
+                     "session_dl_mb", "session_ul_mb"]
+                )
+                success = True
+                print(f"[CSV] Logging to: {path}")
+                break # Stop once we successfully open a file
+            except PermissionError:
+                continue # Try the next path
+        
+        if not success:
+            # If all paths fail, disable logging and tell the user
+            self.csv_logging = False
+            messagebox.showwarning(
+                "Logging Error", 
+                "Permission denied on D: drive. Session logging has been disabled for this run."
+            )
 
     def _write_csv_row(self, dl_s, ul_s):
         if self.csv_writer:
@@ -298,7 +322,7 @@ class CyberNetMonitor(ctk.CTk):
         hdr.pack(fill="x", padx=16, pady=(14, 0))
 
         ctk.CTkLabel(
-            hdr, text="◈  CYBERNET MONITOR", font=TITLE_FONT,
+            hdr, text="◈  NETTRACKRPRO", font=TITLE_FONT,
             text_color=CYAN
         ).pack(side="left", padx=6)
 
@@ -334,7 +358,7 @@ class CyberNetMonitor(ctk.CTk):
 
         # ── Graph ───────────────────────────────
         graph_wrap = ctk.CTkFrame(content, fg_color=BG3, corner_radius=8,
-                                  border_width=1, border_color=CYAN_DIM)
+                                   border_width=1, border_color=CYAN_DIM)
         graph_wrap.grid(row=1, column=0, sticky="nsew", padx=(0, 6), pady=4)
 
         ctk.CTkLabel(
@@ -347,7 +371,7 @@ class CyberNetMonitor(ctk.CTk):
 
         # ── Progress / Limit Panel ───────────────
         right_panel = ctk.CTkFrame(content, fg_color=BG3, corner_radius=8,
-                                   border_width=1, border_color=CYAN_DIM)
+                                    border_width=1, border_color=CYAN_DIM)
         right_panel.grid(row=1, column=1, sticky="nsew", padx=(6, 0), pady=4)
 
         ctk.CTkLabel(
@@ -373,11 +397,11 @@ class CyberNetMonitor(ctk.CTk):
         self.limit_unit.pack(side="left", padx=(0, 6))
 
         set_btn = self._cyber_button(limit_row, "SET", self._apply_limit,
-                                     width=60, color=CYAN)
+                                      width=60, color=CYAN)
         set_btn.pack(side="left")
 
         clear_btn = self._cyber_button(limit_row, "CLR", self._clear_limit,
-                                       width=60, color=YELLOW)
+                                        width=60, color=YELLOW)
         clear_btn.pack(side="left", padx=(6, 0))
 
         self.limit_label = ctk.CTkLabel(
@@ -405,20 +429,20 @@ class CyberNetMonitor(ctk.CTk):
         ).pack(anchor="nw", padx=10, pady=(14, 0))
 
         self.dl_bar = ctk.CTkProgressBar(right_panel, height=10,
-                                         fg_color=GRAY, progress_color=CYAN,
-                                         corner_radius=3)
+                                          fg_color=GRAY, progress_color=CYAN,
+                                          corner_radius=3)
         self.dl_bar.set(0)
         self.dl_bar.pack(padx=10, pady=(4, 2), fill="x")
 
         self.ul_bar = ctk.CTkProgressBar(right_panel, height=10,
-                                         fg_color=GRAY, progress_color=GREEN,
-                                         corner_radius=3)
+                                          fg_color=GRAY, progress_color=GREEN,
+                                          corner_radius=3)
         self.ul_bar.set(0)
         self.ul_bar.pack(padx=10, pady=(2, 8), fill="x")
 
         # ── Terminal Log ─────────────────────────
         log_frame = ctk.CTkFrame(self, fg_color=BG3, corner_radius=8,
-                                 border_width=1, border_color=CYAN_DIM)
+                                  border_width=1, border_color=CYAN_DIM)
         log_frame.pack(fill="x", padx=16, pady=(4, 4))
 
         ctk.CTkLabel(
@@ -464,7 +488,7 @@ class CyberNetMonitor(ctk.CTk):
             ).pack(side="right", padx=8)
 
         # Seed terminal
-        self._log_terminal("CyberNet Monitor initialised. Monitoring started.")
+        self._log_terminal("NetTrackrPro initialised. Monitoring started.")
         if self.csv_logging:
             self._log_terminal("CSV session logging: ENABLED")
         else:
@@ -474,11 +498,11 @@ class CyberNetMonitor(ctk.CTk):
 
     def _speed_card(self, parent, label, color, col):
         frame = ctk.CTkFrame(parent, fg_color=BG3, corner_radius=8,
-                              border_width=1, border_color=color)
+                               border_width=1, border_color=color)
         frame.grid(row=0, column=col, padx=5, pady=4, sticky="ew")
         ctk.CTkLabel(frame, text=label, font=SMALL_FONT, text_color=color).pack(pady=(8, 0))
         val_lbl = ctk.CTkLabel(frame, text="0.00 B/s", font=("Courier New", 16, "bold"),
-                                text_color=color)
+                                  text_color=color)
         val_lbl.pack(pady=(2, 8))
         return val_lbl
 
@@ -612,7 +636,7 @@ class CyberNetMonitor(ctk.CTk):
             # Update GUI (only if not tray-minimized)
             if not self._minimized_tray:
                 self.after(0, lambda d=dl_s, u=ul_s, sd=ses_dl, su=ses_ul,
-                           lim=limit: self._update_ui(d, u, sd, su, lim))
+                            lim=limit: self._update_ui(d, u, sd, su, lim))
 
             # Update tray icon if limit active
             if TRAY_AVAILABLE and self._tray_icon and limit:
@@ -654,7 +678,7 @@ class CyberNetMonitor(ctk.CTk):
         self.status_dot.configure(text="●  LIMIT HIT", text_color=RED)
         run_netsh_disconnect()
         windows_notification(
-            "CyberNet Monitor — Limit Reached",
+            "NetTrackrPro — Limit Reached",
             "Your data limit has been hit. Wi-Fi disconnected."
         )
         self._log_terminal("Wi-Fi disconnected via netsh wlan disconnect.")
@@ -707,10 +731,10 @@ class CyberNetMonitor(ctk.CTk):
             return
         img  = self._make_tray_image()
         menu = pystray.Menu(
-            pystray.MenuItem("Open CyberNet Monitor", self._restore_from_tray),
+            pystray.MenuItem("Open NetTrackrPro", self._restore_from_tray),
             pystray.MenuItem("Quit", self._quit_from_tray)
         )
-        self._tray_icon = pystray.Icon("CyberNet", img, "CyberNet Monitor", menu)
+        self._tray_icon = pystray.Icon("NetTrackrPro", img, "NetTrackrPro", menu)
         self._tray_thread = threading.Thread(target=self._tray_icon.run, daemon=True)
         self._tray_thread.start()
 
@@ -774,7 +798,7 @@ def main():
 
     root.destroy()
 
-    app = CyberNetMonitor(csv_logging=csv_logging)
+    app = NetTrackrPro(csv_logging=csv_logging)
     app.mainloop()
 
 
